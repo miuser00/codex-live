@@ -6,7 +6,7 @@ Ever asked Codex one simple question and wondered why the answer took so long? U
 
 Codex Live Web is a real-time browser viewer that lets you watch Codex work as it happens. As a session unfolds, it brings the conversation, reasoning summaries, tool calls, execution results, and token usage together in one clear timeline, so you can see where the time goes, how the context grows, and how the LLM consumes tokens from one turn to the next. Whether you are reviewing a task, tracking down a slow step, or simply curious about how Codex works under the hood, the whole process becomes much easier to understand.
 
-![Codex Live Web interface preview](./codexlive.jpg)
+![Codex Live Web real-time session flow](./assets/codex-live-flow.gif)
 
 ## Highlights
 

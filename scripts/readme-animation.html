@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Live Web - Real-time session flow</title>
+  <style>
+    :root {
+      --bg: #f4f5f2;
+      --surface: #ffffff;
+      --surface-muted: #eef0ec;
+      --ink: #1b1e1c;
+      --ink-soft: #606761;
+      --line: #d9ddd7;
+      --line-strong: #bec5bd;
+      --teal: #087f75;
+      --teal-bright: #18a66b;
+      --teal-soft: #dff4ef;
+      --coral: #bd4b35;
+      --coral-soft: #fae9e4;
+      --amber: #9a6500;
+      --amber-soft: #fff2cd;
+      --violet: #7756a8;
+      --violet-soft: #eee8f8;
+      --code: #202321;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    .canvas {
+      position: relative;
+      width: 1440px;
+      height: 810px;
+      overflow: hidden;
+      background-color: var(--bg);
+    }
+
+    .canvas::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: rgba(244, 245, 242, 0.74);
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      padding: 34px 48px 28px;
+    }
+
+    .topbar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line-strong);
+    }
+
+    .brand, .live-meta, .brand-name, .stage-kicker, .tag, .metric,
+    .browser-title, .engine-status, .file-name, .timeline-label {
+      display: flex;
+      align-items: center;
+    }
+
+    .brand { gap: 11px; }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: var(--code);
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .brand-name {
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 750;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal-bright);
+      box-shadow: 0 0 0 4px #dff4e9;
+      animation: live-pulse 6000ms infinite;
+    }
+
+    .live-meta {
+      gap: 10px;
+      color: var(--ink-soft);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .live-meta strong {
+      color: var(--teal);
+      font-weight: 800;
+    }
+
+    .intro {
+      height: 153px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 24px 0 20px;
+    }
+
+    .intro-copy { max-width: 860px; }
+
+    .eyebrow {
+      margin-bottom: 8px;
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1.08;
+      font-weight: 760;
+    }
+
+    .intro p {
+      margin: 8px 0 0;
+      color: var(--ink-soft);
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    .intro-signal {
+      width: 235px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .intro-signal span {
+      display: block;
+      color: var(--teal);
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .intro-signal strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .stage {
+      position: relative;
+      height: 430px;
+      display: grid;
+      grid-template-columns: 300px 330px 1fr;
+      gap: 80px;
+    }
+
+    .panel {
+      position: relative;
+      height: 400px;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 12px 28px rgba(27, 30, 28, 0.08);
+    }
+
+    .panel-header {
+      height: 64px;
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stage-kicker {
+      justify-content: space-between;
+      margin-bottom: 4px;
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .stage-kicker b {
+      color: var(--teal);
+      font-weight: 800;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 750;
+    }
+
+    .panel-title svg { width: 17px; height: 17px; }
+
+    .files-body { padding: 15px; }
+
+    .folder-line {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 13px;
+      color: var(--ink-soft);
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .folder-line svg { width: 14px; height: 14px; color: var(--amber); }
+
+    .file-stack { display: grid; gap: 9px; }
+
+    .file-row {
+      position: relative;
+      height: 55px;
+      padding: 9px 10px 8px 38px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfa;
+    }
+
+    .file-row.active {
+      border-color: #8bc9c1;
+      background: var(--teal-soft);
+      animation: active-file 6000ms infinite;
+    }
+
+    .file-icon {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 19px;
+      height: 19px;
+      color: var(--teal);
+    }
+
+    .file-name {
+      justify-content: space-between;
+      gap: 8px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .file-name span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-name em {
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    .file-meta {
+      margin-top: 5px;
+      color: var(--ink-soft);
+      font-size: 9px;
+    }
+
+    .append-line {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: var(--teal);
+      transform-origin: left;
+      animation: append-line 6000ms infinite;
+    }
+
+    .event-queue {
+      margin-top: 14px;
+      padding-top: 11px;
+      border-top: 1px solid var(--line);
+    }
+
+    .queue-head {
+      display: flex;
+      justify-content: space-between;
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .queue-head b { color: var(--teal); }
+
+    .queue-chips {
+      display: flex;
+      gap: 5px;
+      margin-top: 9px;
+    }
+
+    .queue-chip {
+      width: 38px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: white;
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-weight: 800;
+      animation: queue-pulse 6000ms infinite;
+    }
+
+    .queue-chip:nth-child(2) { animation-delay: -4800ms; color: var(--violet); }
+    .queue-chip:nth-child(3) { animation-delay: -3600ms; color: var(--amber); }
+    .queue-chip:nth-child(4) { animation-delay: -2400ms; color: var(--coral); }
+    .queue-chip:nth-child(5) { animation-delay: -1200ms; color: var(--teal); }
+
+    .engine {
+      border-color: var(--code);
+      background: var(--code);
+      color: #e9ece8;
+    }
+
+    .engine .panel-header { border-color: #3b403d; }
+    .engine .stage-kicker { color: #9ea69f; }
+    .engine .stage-kicker b { color: #72c9d2; }
+    .engine .panel-title { color: white; }
+    .engine .panel-title svg { color: #72c9d2; }
+
+    .engine-body { padding: 18px 16px; }
+
+    .engine-status {
+      justify-content: space-between;
+      margin-bottom: 15px;
+      color: #aeb5af;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 9px;
+    }
+
+    .engine-status b { color: #77d7ad; font-weight: 700; }
+
+    .pipeline { display: grid; gap: 10px; }
+
+    .pipeline-step {
+      position: relative;
+      height: 57px;
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 11px;
+      overflow: hidden;
+      border: 1px solid #3b403d;
+      border-radius: 6px;
+      background: #282c29;
+      animation: engine-step 6000ms infinite;
+    }
+
+    .pipeline-step:nth-child(2) { animation-delay: -4000ms; }
+    .pipeline-step:nth-child(3) { animation-delay: -2000ms; }
+
+    .step-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      background: #323835;
+      color: #72c9d2;
+    }
+
+    .step-icon svg { width: 16px; height: 16px; }
+
+    .step-copy strong {
+      display: block;
+      color: #f1f3f0;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .step-copy span {
+      display: block;
+      margin-top: 3px;
+      color: #9ea69f;
+      font-size: 9px;
+    }
+
+    .step-check { color: #77d7ad; }
+    .step-check svg { width: 15px; height: 15px; }
+
+    .engine-log {
+      position: relative;
+      height: 70px;
+      margin-top: 14px;
+      padding: 10px;
+      overflow: hidden;
+      border: 1px solid #3b403d;
+      border-radius: 5px;
+      color: #aeb5af;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .engine-log b { color: #77d7ad; font-weight: 500; }
+
+    .scan-line {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: #72c9d2;
+      animation: scan-line 6000ms infinite;
+    }
+
+    .browser .panel-header {
+      height: 53px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 13px;
+      background: #fafbf9;
+    }
+
+    .browser-title { gap: 8px; font-size: 11px; font-weight: 750; }
+    .browser-title svg { width: 15px; height: 15px; color: var(--teal); }
+
+    .browser-controls { display: flex; gap: 5px; }
+    .browser-controls span { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+    .browser-controls span:nth-child(1) { background: var(--coral); }
+    .browser-controls span:nth-child(2) { background: #d9a82e; }
+    .browser-controls span:nth-child(3) { background: var(--teal-bright); }
+
+    .browser-body {
+      height: 347px;
+      display: grid;
+      grid-template-columns: 116px 1fr;
+    }
+
+    .browser-sidebar {
+      padding: 12px 10px;
+      border-right: 1px solid var(--line);
+      background: #fafbf9;
+    }
+
+    .sidebar-search {
+      height: 25px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--ink-soft);
+      font-size: 8px;
+    }
+
+    .sidebar-search svg { width: 11px; height: 11px; }
+
+    .sidebar-item {
+      margin: 11px -10px 0;
+      padding: 9px 10px;
+      border-left: 3px solid var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .sidebar-item strong { display: block; font-size: 9px; }
+    .sidebar-item span { display: block; margin-top: 4px; color: var(--ink-soft); font-size: 8px; }
+
+    .browser-main { position: relative; padding: 11px 12px; overflow: hidden; }
+
+    .viewer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 9px;
+    }
+
+    .viewer-tabs { display: flex; gap: 4px; }
+
+    .viewer-tabs span, .token-pill {
+      height: 23px;
+      display: flex;
+      align-items: center;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--ink-soft);
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .viewer-tabs .selected { border-color: var(--code); background: var(--code); color: white; }
+    .token-pill { gap: 5px; color: var(--violet); }
+    .token-pill svg { width: 11px; height: 11px; }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 7px;
+      padding-left: 17px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 5px;
+      width: 1px;
+      background: var(--line-strong);
+    }
+
+    .timeline-event {
+      position: relative;
+      min-height: 48px;
+      padding: 8px 9px;
+      border: 1px solid var(--line);
+      border-left-width: 3px;
+      border-radius: 5px;
+      background: white;
+      animation: timeline-event 6000ms infinite;
+    }
+
+    .timeline-event::before {
+      content: "";
+      position: absolute;
+      top: 12px;
+      left: -18px;
+      width: 7px;
+      height: 7px;
+      border: 2px solid white;
+      border-radius: 50%;
+      background: var(--line-strong);
+      box-shadow: 0 0 0 1px var(--line-strong);
+    }
+
+    .timeline-event.user { border-left-color: var(--coral); animation-delay: -4500ms; }
+    .timeline-event.user::before { background: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+    .timeline-event.reasoning { border-left-color: var(--violet); background: #fcfaff; animation-delay: -3300ms; }
+    .timeline-event.reasoning::before { background: var(--violet); box-shadow: 0 0 0 1px var(--violet); }
+    .timeline-event.tool { border-left-color: var(--amber); background: #fffdf6; animation-delay: -2100ms; }
+    .timeline-event.tool::before { background: var(--amber); box-shadow: 0 0 0 1px var(--amber); }
+    .timeline-event.response { border-left-color: var(--teal); background: #fbfffd; animation-delay: -900ms; }
+    .timeline-event.response::before { background: var(--teal); box-shadow: 0 0 0 1px var(--teal); }
+
+    .timeline-label {
+      justify-content: space-between;
+      color: var(--ink-soft);
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .timeline-label b { font-weight: 700; }
+    .user .timeline-label b { color: var(--coral); }
+    .reasoning .timeline-label b { color: var(--violet); }
+    .tool .timeline-label b { color: var(--amber); }
+    .response .timeline-label b { color: var(--teal); }
+
+    .timeline-event p {
+      margin: 5px 0 0;
+      color: var(--ink);
+      font-size: 9px;
+      line-height: 1.35;
+    }
+
+    .connector {
+      position: absolute;
+      z-index: 4;
+      width: 80px;
+      height: 120px;
+      pointer-events: none;
+    }
+
+    .connector.one { top: 145px; left: 300px; }
+    .connector.two { top: 123px; left: 710px; height: 170px; }
+
+    .flow-line {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      left: 0;
+      height: 1px;
+      background: var(--line-strong);
+    }
+
+    .flow-line::after {
+      content: "";
+      position: absolute;
+      top: -3px;
+      right: -1px;
+      width: 6px;
+      height: 6px;
+      border-top: 1px solid var(--ink-soft);
+      border-right: 1px solid var(--ink-soft);
+      transform: rotate(45deg);
+    }
+
+    .flow-label {
+      position: absolute;
+      top: 30px;
+      left: 50%;
+      color: var(--ink-soft);
+      font-size: 8px;
+      font-weight: 800;
+      white-space: nowrap;
+      text-transform: uppercase;
+      transform: translateX(-50%);
+    }
+
+    .packet {
+      position: absolute;
+      top: 46px;
+      left: 0;
+      width: 9px;
+      height: 9px;
+      border: 2px solid var(--bg);
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 1px var(--teal);
+      animation: packet 6000ms linear infinite;
+    }
+
+    .packet:nth-of-type(2) { animation-delay: -4000ms; }
+    .packet:nth-of-type(3) { animation-delay: -2000ms; }
+
+    .connector.two .history-line { top: 33px; }
+    .connector.two .history-label { top: 13px; }
+    .connector.two .history-packet { top: 29px; background: var(--ink-soft); box-shadow: 0 0 0 1px var(--ink-soft); animation-duration: 6000ms; }
+
+    .connector.two .live-line {
+      top: 101px;
+      height: 0;
+      border-top: 1px dashed var(--teal);
+      background: transparent;
+    }
+
+    .connector.two .live-line::after { border-color: var(--teal); }
+    .connector.two .live-label { top: 81px; color: var(--teal); }
+    .connector.two .live-packet { top: 97px; animation-duration: 3000ms; }
+
+    .telemetry {
+      height: 92px;
+      display: grid;
+      grid-template-columns: 190px 1fr 230px;
+      align-items: center;
+      gap: 23px;
+      border-top: 1px solid var(--line-strong);
+    }
+
+    .metric { gap: 10px; }
+
+    .metric-icon {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
+
+    .metric-icon svg { width: 17px; height: 17px; }
+
+    .metric-copy span {
+      display: block;
+      color: var(--ink-soft);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .metric-copy strong {
+      display: block;
+      margin-top: 3px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 16px;
+    }
+
+    .event-track {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: start;
+      padding-top: 14px;
+    }
+
+    .event-track::before {
+      content: "";
+      position: absolute;
+      top: 5px;
+      right: 8%;
+      left: 8%;
+      height: 2px;
+      background: var(--line-strong);
+    }
+
+    .track-progress {
+      position: absolute;
+      top: 5px;
+      left: 8%;
+      width: 84%;
+      height: 2px;
+      background: var(--teal);
+      transform-origin: left;
+      animation: track-progress 6000ms linear infinite;
+    }
+
+    .track-event {
+      position: relative;
+      text-align: center;
+      color: var(--ink-soft);
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .track-event::before {
+      content: "";
+      position: absolute;
+      top: -13px;
+      left: calc(50% - 4px);
+      width: 7px;
+      height: 7px;
+      border: 2px solid var(--bg);
+      border-radius: 50%;
+      background: var(--line-strong);
+      box-shadow: 0 0 0 1px var(--line-strong);
+      animation: track-node 6000ms infinite;
+    }
+
+    .track-event:nth-child(3)::before { animation-delay: -4800ms; }
+    .track-event:nth-child(4)::before { animation-delay: -3600ms; }
+    .track-event:nth-child(5)::before { animation-delay: -2400ms; }
+    .track-event:nth-child(6)::before { animation-delay: -1200ms; }
+
+    .track-event b {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 9px;
+    }
+
+    .tokens {
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    .tokens .metric-icon { background: var(--violet-soft); color: var(--violet); }
+
+    @keyframes live-pulse {
+      0%, 100% { box-shadow: 0 0 0 3px #dff4e9; opacity: 1; }
+      50% { box-shadow: 0 0 0 7px rgba(223, 244, 233, 0); opacity: 0.82; }
+    }
+
+    @keyframes active-file {
+      0%, 100% { background: var(--teal-soft); }
+      45% { background: #effbf7; }
+      55% { background: var(--teal-soft); }
+    }
+
+    @keyframes append-line {
+      0% { transform: scaleX(0.08); }
+      75% { transform: scaleX(1); }
+      100% { transform: scaleX(0.08); }
+    }
+
+    @keyframes queue-pulse {
+      0%, 14%, 100% { border-color: var(--line); transform: translateY(0); background: white; }
+      5%, 9% { border-color: var(--teal); transform: translateY(-3px); background: var(--teal-soft); }
+    }
+
+    @keyframes engine-step {
+      0%, 17%, 100% { border-color: #3b403d; background: #282c29; }
+      6%, 12% { border-color: #72c9d2; background: #2c3734; }
+    }
+
+    @keyframes scan-line {
+      0% { transform: translateX(-100%); }
+      75% { transform: translateX(100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    @keyframes timeline-event {
+      0%, 100% { transform: translateX(0); opacity: 1; }
+      5% { transform: translateX(5px); opacity: 0.62; }
+      12% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes packet {
+      0% { transform: translateX(0); opacity: 0; }
+      8% { opacity: 1; }
+      92% { opacity: 1; }
+      100% { transform: translateX(72px); opacity: 0; }
+    }
+
+    @keyframes track-progress {
+      0% { transform: scaleX(0); }
+      92% { transform: scaleX(1); }
+      100% { transform: scaleX(0); }
+    }
+
+    @keyframes track-node {
+      0%, 15%, 100% { background: var(--line-strong); box-shadow: 0 0 0 1px var(--line-strong); }
+      5%, 11% { background: var(--teal); box-shadow: 0 0 0 1px var(--teal), 0 0 0 5px var(--teal-soft); }
+    }
+  </style>
+</head>
+<body>
+  <main class="canvas">
+    <div class="content">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">C</div>
+          <div class="brand-name">Codex Live Web <span class="live-dot"></span></div>
+        </div>
+        <div class="live-meta"><strong>Live</strong><span>Real-time session flow</span><span>127.0.0.1:17346</span></div>
+      </header>
+
+      <section class="intro">
+        <div class="intro-copy">
+          <div class="eyebrow">See every turn as it happens</div>
+          <h1>Watch Codex think, act, and respond.</h1>
+          <p>From raw session events to a clear browser timeline, without losing sight of a single token.</p>
+        </div>
+        <div class="intro-signal"><span>Streaming now</span><strong>Session updates arrive live</strong></div>
+      </section>
+
+      <section class="stage">
+        <article class="panel files">
+          <header class="panel-header">
+            <div class="stage-kicker"><span>01 / Source</span><b>Appending</b></div>
+            <div class="panel-title"><i data-lucide="files"></i> Session stream</div>
+          </header>
+          <div class="files-body">
+            <div class="folder-line"><i data-lucide="folder-open"></i>~/.codex/sessions/2026/08/17</div>
+            <div class="file-stack">
+              <div class="file-row">
+                <i class="file-icon" data-lucide="file-json-2"></i>
+                <div class="file-name"><span>rollout-14-32.jsonl</span><em>84 KB</em></div>
+                <div class="file-meta">completed · 126 events</div>
+              </div>
+              <div class="file-row active">
+                <i class="file-icon" data-lucide="file-json-2"></i>
+                <div class="file-name"><span>rollout-15-15.jsonl</span><em id="fileSize">157 KB</em></div>
+                <div class="file-meta">active · receiving events</div>
+                <span class="append-line"></span>
+              </div>
+              <div class="file-row">
+                <i class="file-icon" data-lucide="file-json-2"></i>
+                <div class="file-name"><span>rollout-16-02.jsonl</span><em>42 KB</em></div>
+                <div class="file-meta">completed · 71 events</div>
+              </div>
+            </div>
+            <div class="event-queue">
+              <div class="queue-head"><span>Incoming events</span><b id="eventRate">+12 / sec</b></div>
+              <div class="queue-chips">
+                <span class="queue-chip">MSG</span><span class="queue-chip">RSN</span><span class="queue-chip">TOOL</span><span class="queue-chip">OUT</span><span class="queue-chip">TOK</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <div class="connector one">
+          <span class="flow-label">JSONL tail</span><span class="flow-line"></span>
+          <span class="packet"></span><span class="packet"></span><span class="packet"></span>
+        </div>
+
+        <article class="panel engine">
+          <header class="panel-header">
+            <div class="stage-kicker"><span>02 / Transform</span><b>Rust</b></div>
+            <div class="panel-title"><i data-lucide="cpu"></i> Event engine</div>
+          </header>
+          <div class="engine-body">
+            <div class="engine-status"><span>codex-live-web-native</span><b>● RUNNING</b></div>
+            <div class="pipeline">
+              <div class="pipeline-step">
+                <span class="step-icon"><i data-lucide="scan-line"></i></span>
+                <span class="step-copy"><strong>Tail session</strong><span>Read complete JSONL lines</span></span>
+                <span class="step-check"><i data-lucide="check"></i></span>
+              </div>
+              <div class="pipeline-step">
+                <span class="step-icon"><i data-lucide="braces"></i></span>
+                <span class="step-copy"><strong>Parse events</strong><span>Messages · reasoning · tools</span></span>
+                <span class="step-check"><i data-lucide="check"></i></span>
+              </div>
+              <div class="pipeline-step">
+                <span class="step-icon"><i data-lucide="shuffle"></i></span>
+                <span class="step-copy"><strong>Normalize</strong><span>One clear timeline format</span></span>
+                <span class="step-check"><i data-lucide="check"></i></span>
+              </div>
+            </div>
+            <div class="engine-log">
+              <div><b>event</b> tool_call → shell_command</div>
+              <div><b>usage</b> input 182,672 · output 11,776</div>
+              <div><b>push</b> /api/live offset=<span id="offset">18432</span></div>
+              <span class="scan-line"></span>
+            </div>
+          </div>
+        </article>
+
+        <div class="connector two">
+          <span class="flow-label history-label">HTTP JSON · history</span><span class="flow-line history-line"></span>
+          <span class="packet history-packet"></span>
+          <span class="flow-label live-label">SSE · live events</span><span class="flow-line live-line"></span>
+          <span class="packet live-packet"></span><span class="packet live-packet"></span><span class="packet live-packet"></span>
+        </div>
+
+        <article class="panel browser">
+          <header class="panel-header">
+            <div class="browser-title"><i data-lucide="radio"></i> LIVE / rollout-15-15</div>
+            <div class="browser-controls"><span></span><span></span><span></span></div>
+          </header>
+          <div class="browser-body">
+            <aside class="browser-sidebar">
+              <div class="sidebar-search"><i data-lucide="search"></i>Find session</div>
+              <div class="sidebar-item"><strong>Adapt the viewer</strong><span>Live · 194K tokens</span></div>
+            </aside>
+            <div class="browser-main">
+              <div class="viewer-bar">
+                <div class="viewer-tabs"><span class="selected">All</span><span>Chat</span><span>Tools</span></div>
+                <div class="token-pill"><i data-lucide="gauge"></i><span id="viewerTokens">194,448</span></div>
+              </div>
+              <div class="timeline">
+                <div class="timeline-event user">
+                  <div class="timeline-label"><b>User message</b><span>15:15:10</span></div>
+                  <p>Show me what Codex is doing in real time.</p>
+                </div>
+                <div class="timeline-event reasoning">
+                  <div class="timeline-label"><b>Reasoning summary</b><span>15:15:13</span></div>
+                  <p>Inspecting the session and planning the next step...</p>
+                </div>
+                <div class="timeline-event tool">
+                  <div class="timeline-label"><b>Tool call</b><span>15:15:17</span></div>
+                  <p>shell_command · npm.cmd test</p>
+                </div>
+                <div class="timeline-event response">
+                  <div class="timeline-label"><b>Codex response</b><span>15:15:21</span></div>
+                  <p>All checks passed. The update is ready.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <footer class="telemetry">
+        <div class="metric">
+          <span class="metric-icon"><i data-lucide="radio-tower"></i></span>
+          <span class="metric-copy"><span>Live latency</span><strong id="latency">82 ms</strong></span>
+        </div>
+        <div class="event-track">
+          <span class="track-progress"></span>
+          <span class="track-event">Prompt<b>00:00</b></span>
+          <span class="track-event">Reasoning<b>00:03</b></span>
+          <span class="track-event">Tool call<b>00:07</b></span>
+          <span class="track-event">Result<b>00:09</b></span>
+          <span class="track-event">Response<b>00:12</b></span>
+        </div>
+        <div class="metric tokens">
+          <span class="metric-copy"><span>Tokens observed</span><strong id="tokenCount">194,448</strong></span>
+          <span class="metric-icon"><i data-lucide="gauge"></i></span>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <script src="../codex-live-web/public/vendor/lucide.min.js"></script>
+  <script>
+    lucide.createIcons({ attrs: { "stroke-width": 1.8 } });
+
+    const animations = document.getAnimations();
+    animations.forEach((animation) => animation.pause());
+
+    window.setAnimationTime = (milliseconds) => {
+      const time = milliseconds % 6000;
+      animations.forEach((animation) => { animation.currentTime = time; });
+      const phase = time / 6000;
+      const tokens = Math.round(24480 + 169968 * phase).toLocaleString("en-US");
+      document.getElementById("tokenCount").textContent = tokens;
+      document.getElementById("viewerTokens").textContent = tokens;
+      document.getElementById("fileSize").textContent = `${Math.round(92 + 65 * phase)} KB`;
+      document.getElementById("offset").textContent = String(Math.round(18432 + 24576 * phase));
+      document.getElementById("eventRate").textContent = `+${8 + Math.round(7 * Math.sin(phase * Math.PI))} / sec`;
+      document.getElementById("latency").textContent = `${72 + Math.round(18 * Math.sin(phase * Math.PI * 2) ** 2)} ms`;
+    };
+
+    window.setAnimationTime(0);
+    window.animationReady = true;
+  </script>
+</body>
+</html>

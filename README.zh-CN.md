@@ -6,7 +6,7 @@
 
 Codex Live Web 让你直接在浏览器中实时观看 Codex 的工作过程。随着会话进行，对话内容、推理摘要、工具调用、执行结果和 token 用量会汇集到一条清晰的时间线上，让你知道时间花在了哪里、上下文是怎样一点点变长的，以及 LLM 引擎如何在每轮任务中消耗 token。无论是复盘一次任务、排查执行卡点，还是深入了解 Codex 的运行机制，都会直观得多。
 
-![Codex Live Web 界面预览](./codexlive.jpg)
+![Codex Live Web 实时会话流程](./assets/codex-live-flow.gif)
 
 ## 功能亮点
 
