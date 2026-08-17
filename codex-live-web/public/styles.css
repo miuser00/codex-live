@@ -59,6 +59,8 @@ button { color: inherit; }
 .icon-button svg { width: 17px; height: 17px; stroke-width: 1.8; }
 .icon-button:hover { background: var(--surface-muted); border-color: var(--line); }
 .icon-button.active { color: var(--teal); background: var(--teal-soft); }
+.language-button { width: 48px; grid-auto-flow: column; grid-template-columns: 17px auto; gap: 4px; padding: 0 7px; }
+.language-code { font: 700 10px/1 ui-monospace, "Cascadia Mono", monospace; }
 
 .sidebar { grid-row: 2; min-width: 0; background: var(--surface); border-right: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; }
 .sidebar-toolbar { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 6px; border-bottom: 1px solid var(--line); }
@@ -190,6 +192,7 @@ details[open] .tool-meta > svg, details[open] .token-summary > svg { transform: 
   .session-heading { display: none; }
   .top-actions { padding: 0; gap: 0; }
   .top-actions .icon-button { width: 32px; }
+  .top-actions .language-button { width: 42px; }
   #clearButton { display: none; }
   .mobile-only { display: grid; }
   .sidebar { position: fixed; z-index: 40; top: 58px; bottom: 0; left: 0; width: min(86vw, 310px); transform: translateX(-100%); transition: transform 180ms ease; box-shadow: 8px 0 24px #1b1e1c26; }

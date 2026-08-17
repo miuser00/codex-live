@@ -9,7 +9,7 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <button class="icon-button mobile-only" id="sidebarToggle" type="button" title="打开会话列表" aria-label="打开会话列表">
+      <button class="icon-button mobile-only" id="sidebarToggle" type="button" title="打开会话列表" aria-label="打开会话列表" data-i18n-label="openSessions">
         <i data-lucide="panel-left"></i>
       </button>
       <div class="brand-block">
@@ -24,16 +24,20 @@
         <span id="activeMeta"></span>
       </div>
       <div class="top-actions">
-        <button class="icon-button active" id="followButton" type="button" title="跟随最新会话" aria-label="跟随最新会话">
+        <button class="icon-button active" id="followButton" type="button" title="跟随最新会话" aria-label="跟随最新会话" data-i18n-label="followLatest">
           <i data-lucide="radio"></i>
         </button>
-        <button class="icon-button active" id="autoscrollButton" type="button" title="自动滚动" aria-label="自动滚动">
+        <button class="icon-button active" id="autoscrollButton" type="button" title="自动滚动" aria-label="自动滚动" data-i18n-label="autoScroll">
           <i data-lucide="arrow-down-to-line"></i>
         </button>
-        <button class="icon-button" id="clearButton" type="button" title="清空当前视图" aria-label="清空当前视图">
+        <button class="icon-button" id="clearButton" type="button" title="清空当前视图" aria-label="清空当前视图" data-i18n-label="clearView">
           <i data-lucide="trash-2"></i>
         </button>
-        <button class="icon-button danger" id="shutdownButton" type="button" title="停止查看器" aria-label="停止查看器">
+        <button class="icon-button language-button" id="languageButton" type="button" title="Switch to English" aria-label="Switch to English">
+          <i data-lucide="languages"></i>
+          <span class="language-code">EN</span>
+        </button>
+        <button class="icon-button danger" id="shutdownButton" type="button" title="停止查看器" aria-label="停止查看器" data-i18n-label="stopViewer">
           <i data-lucide="power"></i>
         </button>
       </div>
@@ -43,38 +47,38 @@
       <div class="sidebar-toolbar">
         <label class="search-box">
           <i data-lucide="search"></i>
-          <input id="sessionSearch" type="search" placeholder="搜索会话" autocomplete="off">
+          <input id="sessionSearch" type="search" placeholder="搜索会话" autocomplete="off" data-i18n-placeholder="searchSessions">
         </label>
-        <button class="icon-button" id="refreshButton" type="button" title="刷新会话" aria-label="刷新会话">
+        <button class="icon-button" id="refreshButton" type="button" title="刷新会话" aria-label="刷新会话" data-i18n-label="refreshSessions">
           <i data-lucide="refresh-cw"></i>
         </button>
       </div>
-      <div class="session-list" id="sessionList" aria-label="Codex 会话列表"></div>
+      <div class="session-list" id="sessionList" aria-label="Codex 会话列表" data-i18n-aria="sessionList"></div>
     </aside>
 
     <main class="main-panel">
       <div class="control-band">
-        <div class="segmented" role="tablist" aria-label="事件类型">
-          <button class="selected" type="button" data-filter="all">全部</button>
-          <button type="button" data-filter="dialogue">对话</button>
-          <button type="button" data-filter="tools">工具</button>
+        <div class="segmented" role="tablist" aria-label="事件类型" data-i18n-aria="eventTypes">
+          <button class="selected" type="button" data-filter="all" data-i18n="filterAll">全部</button>
+          <button type="button" data-filter="dialogue" data-i18n="filterDialogue">对话</button>
+          <button type="button" data-filter="tools" data-i18n="filterTools">工具</button>
         </div>
         <label class="event-search">
           <i data-lucide="scan-search"></i>
-          <input id="eventSearch" type="search" placeholder="在当前会话中查找" autocomplete="off">
+          <input id="eventSearch" type="search" placeholder="在当前会话中查找" autocomplete="off" data-i18n-placeholder="searchCurrentSession">
         </label>
         <details class="tool-collapse-options" id="toolCollapseOptions">
-          <summary title="工具折叠设置" aria-label="工具折叠设置"><i data-lucide="fold-vertical"></i><span>折叠</span><i data-lucide="chevron-down"></i></summary>
+          <summary title="工具折叠设置" aria-label="工具折叠设置" data-i18n-label="collapseSettings"><i data-lucide="fold-vertical"></i><span data-i18n="collapse">折叠</span><i data-lucide="chevron-down"></i></summary>
           <div class="tool-collapse-menu">
             <label class="tool-collapse-row">
-              <span>工具执行</span>
+              <span data-i18n="toolCall">工具执行</span>
               <span class="switch-control">
                 <input id="collapseToolCalls" type="checkbox">
                 <span class="switch-track" aria-hidden="true"></span>
               </span>
             </label>
             <label class="tool-collapse-row">
-              <span>工具返回</span>
+              <span data-i18n="toolOutput">工具返回</span>
               <span class="switch-control">
                 <input id="collapseToolOutputs" type="checkbox">
                 <span class="switch-track" aria-hidden="true"></span>
@@ -92,7 +96,7 @@
       <section class="timeline" id="timeline" aria-live="polite">
         <div class="empty-state" id="emptyState">
           <i data-lucide="messages-square"></i>
-          <strong>正在读取会话</strong>
+          <strong data-i18n="readingSessions">正在读取会话</strong>
         </div>
       </section>
     </main>

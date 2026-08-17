@@ -1,6 +1,40 @@
 const preferenceKeys = {
   collapseToolCalls: 'codex-live-web.collapse-tool-calls',
   collapseToolOutputs: 'codex-live-web.collapse-tool-outputs',
+  language: 'codex-live-web.language',
+};
+
+const translations = {
+  'zh-CN': {
+    openSessions: '打开会话列表', connecting: '正在连接', selectSession: '选择会话',
+    followLatest: '跟随最新会话', autoScroll: '自动滚动', clearView: '清空当前视图', stopViewer: '停止查看器',
+    switchLanguage: 'Switch to English', languageCode: 'EN', searchSessions: '搜索会话', refreshSessions: '刷新会话',
+    sessionList: 'Codex 会话列表', eventTypes: '事件类型', filterAll: '全部', filterDialogue: '对话', filterTools: '工具',
+    searchCurrentSession: '在当前会话中查找', collapseSettings: '工具折叠设置', collapse: '折叠',
+    toolCall: '工具执行', toolOutput: '工具返回', readingSessions: '正在读取会话', reading: '正在读取',
+    live: '实时', waitingToReconnect: '等待重连', turnStart: '开始', turnComplete: '完成',
+    turnCompleteDuration: '完成 · {duration} 秒', user: '用户', developer: '开发者输入', reasoningSummary: '推理摘要',
+    tokenUsage: 'Token 用量', cumulative: '累计 {value}', totalInput: '总输入', cachedInput: '缓存输入',
+    totalOutput: '总输出', reasoningOutput: '推理输出', currentContext: '本轮上下文', noUsage: '暂无用量数据',
+    noMatchingEvents: '没有匹配的事件', waitForToolOutput: '等待工具返回', functionCall: '函数调用',
+    stopping: '正在停止', stopped: '已停止', stopFailed: '停止失败', connectionFailed: '连接失败',
+    eventCount: '{count} 项', eventSingular: '项', eventPlural: '项',
+  },
+  en: {
+    openSessions: 'Open session list', connecting: 'Connecting', selectSession: 'Select a session',
+    followLatest: 'Follow latest session', autoScroll: 'Auto-scroll', clearView: 'Clear current view', stopViewer: 'Stop viewer',
+    switchLanguage: '切换到中文', languageCode: '中', searchSessions: 'Search sessions', refreshSessions: 'Refresh sessions',
+    sessionList: 'Codex session list', eventTypes: 'Event type', filterAll: 'All', filterDialogue: 'Dialogue', filterTools: 'Tools',
+    searchCurrentSession: 'Search in current session', collapseSettings: 'Tool collapse settings', collapse: 'Collapse',
+    toolCall: 'Tool call', toolOutput: 'Tool output', readingSessions: 'Loading sessions', reading: 'Loading',
+    live: 'Live', waitingToReconnect: 'Waiting to reconnect', turnStart: 'Started', turnComplete: 'Completed',
+    turnCompleteDuration: 'Completed · {duration} sec', user: 'User', developer: 'Developer input', reasoningSummary: 'Reasoning summary',
+    tokenUsage: 'Token usage', cumulative: 'Total {value}', totalInput: 'Total input', cachedInput: 'Cached input',
+    totalOutput: 'Total output', reasoningOutput: 'Reasoning output', currentContext: 'Current context', noUsage: 'No usage data',
+    noMatchingEvents: 'No matching events', waitForToolOutput: 'Waiting for tool output', functionCall: 'Function call',
+    stopping: 'Stopping', stopped: 'Stopped', stopFailed: 'Failed to stop', connectionFailed: 'Connection failed',
+    eventCount: '{count} {unit}', eventSingular: 'item', eventPlural: 'items',
+  },
 };
 
 function readStoredBoolean(key, fallback) {
@@ -18,6 +52,21 @@ function storeBoolean(key, value) {
   } catch {}
 }
 
+function readStoredLanguage() {
+  try {
+    const value = localStorage.getItem(preferenceKeys.language);
+    return Object.hasOwn(translations, value) ? value : 'zh-CN';
+  } catch {
+    return 'zh-CN';
+  }
+}
+
+function storeLanguage(value) {
+  try {
+    localStorage.setItem(preferenceKeys.language, value);
+  } catch {}
+}
+
 const state = {
   sessions: [],
   activeToken: null,
@@ -31,6 +80,9 @@ const state = {
   followLatest: true,
   collapseToolCalls: readStoredBoolean(preferenceKeys.collapseToolCalls, false),
   collapseToolOutputs: readStoredBoolean(preferenceKeys.collapseToolOutputs, true),
+  language: readStoredLanguage(),
+  liveStatusMode: '',
+  liveStatusKey: 'connecting',
 };
 
 const markdown = window.markdownit?.({ html: false, linkify: true, typographer: true, breaks: true });
@@ -68,11 +120,44 @@ const elements = {
   tokenOverviewBody: document.querySelector('#tokenOverviewBody'),
   sidebar: document.querySelector('#sidebar'),
   sidebarScrim: document.querySelector('#sidebarScrim'),
+  languageButton: document.querySelector('#languageButton'),
 };
+
+function t(key, replacements = {}) {
+  const template = translations[state.language]?.[key] ?? translations['zh-CN'][key] ?? key;
+  return template.replace(/\{(\w+)\}/g, (_, name) => replacements[name] ?? `{${name}}`);
+}
+
+function applyLanguage({ rerender = true } = {}) {
+  document.documentElement.lang = state.language;
+  document.querySelectorAll('[data-i18n]').forEach((element) => { element.textContent = t(element.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-label]').forEach((element) => {
+    const label = t(element.dataset.i18nLabel);
+    element.title = label;
+    element.setAttribute('aria-label', label);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => { element.placeholder = t(element.dataset.i18nPlaceholder); });
+  document.querySelectorAll('[data-i18n-aria]').forEach((element) => { element.setAttribute('aria-label', t(element.dataset.i18nAria)); });
+  elements.languageButton.title = t('switchLanguage');
+  elements.languageButton.setAttribute('aria-label', t('switchLanguage'));
+  elements.languageButton.querySelector('.language-code').textContent = t('languageCode');
+  if (!state.activeSession) elements.activeTitle.textContent = t('selectSession');
+  setLiveStatus(state.liveStatusMode, state.liveStatusKey);
+  if (rerender) {
+    renderSessions();
+    renderTimeline();
+  }
+}
+
+function setLanguage(language) {
+  state.language = language;
+  storeLanguage(language);
+  applyLanguage();
+}
 
 function formatDate(value) {
   if (!value) return '';
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat(state.language, {
     month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
   }).format(new Date(value));
 }
@@ -84,7 +169,15 @@ function formatBytes(bytes) {
 }
 
 function formatNumber(value) {
-  return new Intl.NumberFormat('zh-CN').format(Number(value || 0));
+  return new Intl.NumberFormat(state.language).format(Number(value || 0));
+}
+
+function formatDecimal(value) {
+  return new Intl.NumberFormat(state.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+}
+
+function formatEventCount(count) {
+  return t('eventCount', { count: formatNumber(count), unit: t(count === 1 ? 'eventSingular' : 'eventPlural') });
 }
 
 function icon(name, size = 16) {
@@ -139,12 +232,12 @@ async function selectSession(token, { following = false } = {}) {
   state.activeToken = token;
   state.followLatest = following;
   elements.followButton.classList.toggle('active', state.followLatest);
-  setLiveStatus('loading', '正在读取');
+  setLiveStatus('loading', 'reading');
   renderSessions();
 
   const data = await fetchJson(`/api/session?token=${encodeURIComponent(token)}`);
   state.events = data.events || [];
-  state.activeSession = state.sessions.find((item) => item.token === token) || { token, title: data.path, path: data.path };
+  state.activeSession = { ...(state.sessions.find((item) => item.token === token) || { token, title: data.path, path: data.path }), fileSize: data.fileSize };
   elements.activeTitle.textContent = state.activeSession.title;
   elements.activeMeta.textContent = `${data.path} · ${formatBytes(data.fileSize)}`;
   renderTimeline();
@@ -155,7 +248,7 @@ async function selectSession(token, { following = false } = {}) {
 function connectLive(token, offset, line) {
   const source = new EventSource(`/api/live?token=${encodeURIComponent(token)}&offset=${offset}&line=${line}`);
   state.eventSource = source;
-  source.addEventListener('ready', () => setLiveStatus('live', '实时'));
+  source.addEventListener('ready', () => setLiveStatus('live', 'live'));
   source.onmessage = (message) => {
     if (state.activeToken !== token) return;
     const event = JSON.parse(message.data);
@@ -163,7 +256,7 @@ function connectLive(token, offset, line) {
     state.events.push(event);
     appendEventIfVisible(event);
   };
-  source.onerror = () => setLiveStatus('error', '等待重连');
+  source.onerror = () => setLiveStatus('error', 'waitingToReconnect');
 }
 
 function closeLive() {
@@ -171,9 +264,11 @@ function closeLive() {
   state.eventSource = null;
 }
 
-function setLiveStatus(mode, label) {
+function setLiveStatus(mode, key) {
+  state.liveStatusMode = mode;
+  state.liveStatusKey = key;
   elements.liveStatus.className = `live-status ${mode}`;
-  elements.liveStatus.lastChild.textContent = label;
+  elements.liveStatus.lastChild.textContent = t(key);
 }
 
 function eventMatches(event) {
@@ -195,7 +290,7 @@ function renderTimeline() {
   }
   elements.timeline.replaceChildren(fragment);
   if (count === 0) elements.timeline.append(createEmptyState());
-  elements.eventCount.textContent = `${count} 项`;
+  elements.eventCount.textContent = formatEventCount(count);
   refreshIcons(elements.timeline);
   if (state.autoScroll) scrollToBottom(false);
 }
@@ -211,14 +306,14 @@ function appendEventIfVisible(event) {
   const node = renderEvent(event);
   if (!node) return;
   elements.timeline.append(node);
-  elements.eventCount.textContent = `${elements.timeline.querySelectorAll('[data-event]').length} 项`;
+  elements.eventCount.textContent = formatEventCount(elements.timeline.querySelectorAll('[data-event]').length);
   refreshIcons(node);
   if (state.autoScroll) scrollToBottom(false);
 }
 
 function renderEvent(event) {
-  if (event.kind === 'turn-start') return renderTurnDivider(event, '开始', 'play');
-  if (event.kind === 'turn-complete') return renderTurnDivider(event, event.durationMs ? `完成 · ${(event.durationMs / 1000).toFixed(1)} 秒` : '完成', 'check');
+  if (event.kind === 'turn-start') return renderTurnDivider(event, t('turnStart'), 'play');
+  if (event.kind === 'turn-complete') return renderTurnDivider(event, event.durationMs ? t('turnCompleteDuration', { duration: formatDecimal(event.durationMs / 1000) }) : t('turnComplete'), 'check');
   if (event.kind === 'token') return renderTokenEvent(event);
   if (event.kind === 'tool-call' || event.kind === 'tool-output') return renderToolEvent(event);
   if (['user', 'assistant', 'developer', 'reasoning-summary'].includes(event.kind)) return renderMessageEvent(event);
@@ -230,7 +325,7 @@ function renderMessageEvent(event) {
   article.className = `event message-event ${event.kind}`;
   article.dataset.event = event.id;
   const labels = {
-    user: ['用户', 'user-round'], assistant: ['Codex', 'sparkles'], developer: ['开发者输入', 'braces'], 'reasoning-summary': ['推理摘要', 'brain'],
+    user: [t('user'), 'user-round'], assistant: ['Codex', 'sparkles'], developer: [t('developer'), 'braces'], 'reasoning-summary': [t('reasoningSummary'), 'brain'],
   };
   const [label, iconName] = labels[event.kind];
   article.innerHTML = `
@@ -248,7 +343,7 @@ function renderToolEvent(event) {
   details.className = `event tool-event ${event.kind}`;
   details.dataset.event = event.id;
   const isCall = event.kind === 'tool-call';
-  const title = isCall ? toolDisplayName(event.name) : '工具返回';
+  const title = isCall ? toolDisplayName(event.name) : t('toolOutput');
   details.open = isCall ? !state.collapseToolCalls : !state.collapseToolOutputs;
   details.innerHTML = `
     <summary>
@@ -268,18 +363,18 @@ function renderTokenEvent(event) {
   const contextPercent = usage.contextWindow ? Math.min(100, (usage.last.all / usage.contextWindow) * 100) : null;
   details.innerHTML = `
     <summary>
-      <span class="tool-title">${icon('gauge')}<strong>Token 用量</strong></span>
-      <span class="token-summary">累计 ${formatNumber(usage.total.all)}${icon('chevron-down')}</span>
+      <span class="tool-title">${icon('gauge')}<strong>${t('tokenUsage')}</strong></span>
+      <span class="token-summary">${t('cumulative', { value: formatNumber(usage.total.all) })}${icon('chevron-down')}</span>
     </summary>
     <div class="token-body">
       <div class="usage-grid">
-        ${usageMetric('总输入', usage.total.input)}
-        ${usageMetric('缓存输入', usage.total.cached)}
-        ${usageMetric('总输出', usage.total.output)}
-        ${usageMetric('推理输出', usage.total.reasoning)}
+        ${usageMetric(t('totalInput'), usage.total.input)}
+        ${usageMetric(t('cachedInput'), usage.total.cached)}
+        ${usageMetric(t('totalOutput'), usage.total.output)}
+        ${usageMetric(t('reasoningOutput'), usage.total.reasoning)}
       </div>
       ${contextPercent === null ? '' : `
-        <div class="context-row"><span>本轮上下文</span><strong>${formatNumber(usage.last.all)} / ${formatNumber(usage.contextWindow)}</strong></div>
+        <div class="context-row"><span>${t('currentContext')}</span><strong>${formatNumber(usage.last.all)} / ${formatNumber(usage.contextWindow)}</strong></div>
         <div class="context-track"><span style="width:${contextPercent.toFixed(2)}%"></span></div>
       `}
     </div>
@@ -291,7 +386,7 @@ function updateTokenOverview() {
   const latest = [...state.events].reverse().find((event) => event.kind === 'token');
   if (!latest) {
     elements.tokenOverviewLabel.textContent = 'Token';
-    elements.tokenOverviewBody.innerHTML = '<span class="no-usage">暂无用量数据</span>';
+    elements.tokenOverviewBody.innerHTML = `<span class="no-usage">${t('noUsage')}</span>`;
     return;
   }
   const usage = latest.usage;
@@ -299,13 +394,13 @@ function updateTokenOverview() {
   elements.tokenOverviewLabel.textContent = `Token ${formatNumber(usage.total.all)}`;
   elements.tokenOverviewBody.innerHTML = `
     <div class="usage-grid">
-      ${usageMetric('总输入', usage.total.input)}
-      ${usageMetric('缓存输入', usage.total.cached)}
-      ${usageMetric('总输出', usage.total.output)}
-      ${usageMetric('推理输出', usage.total.reasoning)}
+      ${usageMetric(t('totalInput'), usage.total.input)}
+      ${usageMetric(t('cachedInput'), usage.total.cached)}
+      ${usageMetric(t('totalOutput'), usage.total.output)}
+      ${usageMetric(t('reasoningOutput'), usage.total.reasoning)}
     </div>
     ${contextPercent === null ? '' : `
-      <div class="context-row"><span>本轮上下文</span><strong>${formatNumber(usage.last.all)} / ${formatNumber(usage.contextWindow)}</strong></div>
+      <div class="context-row"><span>${t('currentContext')}</span><strong>${formatNumber(usage.last.all)} / ${formatNumber(usage.contextWindow)}</strong></div>
       <div class="context-track"><span style="width:${contextPercent.toFixed(2)}%"></span></div>
     `}
   `;
@@ -326,7 +421,7 @@ function renderTurnDivider(event, label, iconName) {
 function createEmptyState() {
   const div = document.createElement('div');
   div.className = 'empty-state';
-  div.innerHTML = `${icon('messages-square', 24)}<strong>没有匹配的事件</strong>`;
+  div.innerHTML = `${icon('messages-square', 24)}<strong>${t('noMatchingEvents')}</strong>`;
   return div;
 }
 
@@ -337,14 +432,14 @@ function shortId(value = '') {
 function toolDisplayName(value = '') {
   const normalized = String(value).split('.').pop().toLowerCase();
   const labels = {
-    exec: '工具执行',
-    exec_command: '工具执行',
-    shell_command: '工具执行',
-    wait: '等待工具返回',
-    function: '函数调用',
-    tool: '工具执行',
+    exec: t('toolCall'),
+    exec_command: t('toolCall'),
+    shell_command: t('toolCall'),
+    wait: t('waitForToolOutput'),
+    function: t('functionCall'),
+    tool: t('toolCall'),
   };
-  return labels[normalized] || value || '工具执行';
+  return labels[normalized] || value || t('toolCall');
 }
 
 function escapeHtml(value = '') {
@@ -395,16 +490,16 @@ document.querySelector('#clearButton').addEventListener('click', () => {
 document.querySelector('#shutdownButton').addEventListener('click', async (event) => {
   const button = event.currentTarget;
   button.disabled = true;
-  setLiveStatus('loading', '正在停止');
+  setLiveStatus('loading', 'stopping');
   try {
     const response = await fetch('/api/shutdown', { method: 'POST' });
     if (!response.ok) throw new Error(response.statusText);
     closeLive();
-    setLiveStatus('error', '已停止');
+    setLiveStatus('error', 'stopped');
     window.close();
   } catch (error) {
     button.disabled = false;
-    setLiveStatus('error', '停止失败');
+    setLiveStatus('error', 'stopFailed');
     console.error(error);
   }
 });
@@ -440,10 +535,12 @@ elements.collapseToolOutputs.addEventListener('change', (event) => {
 
 document.querySelector('#sidebarToggle').addEventListener('click', () => document.body.classList.add('sidebar-open'));
 elements.sidebarScrim.addEventListener('click', closeSidebar);
+elements.languageButton.addEventListener('click', () => setLanguage(state.language === 'zh-CN' ? 'en' : 'zh-CN'));
 
+applyLanguage({ rerender: false });
 refreshIcons();
 loadSessions({ preserveSelection: false }).catch((error) => {
-  setLiveStatus('error', '连接失败');
+  setLiveStatus('error', 'connectionFailed');
   elements.timeline.replaceChildren(createEmptyState());
   console.error(error);
 });
