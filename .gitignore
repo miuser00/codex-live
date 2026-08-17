@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Rust build cache
+/codex-live-web/native/target/
+
+# Test output
+playwright-report/
+test-results/
+coverage/
+
+# Logs and runtime files
+*.log
+*.pid
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

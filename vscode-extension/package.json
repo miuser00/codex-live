@@ -1,0 +1,90 @@
+{
+  "name": "codex-live-web",
+  "displayName": "Codex Live Web",
+  "description": "在浏览器中实时查看本机 Codex 会话、工具执行和工具返回。",
+  "version": "0.1.0",
+  "publisher": "codex-live-local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "codex",
+    "sessions",
+    "tools",
+    "viewer"
+  ],
+  "main": "./extension.js",
+  "extensionKind": [
+    "ui"
+  ],
+  "activationEvents": [
+    "onCommand:codexLiveWeb.start",
+    "onCommand:codexLiveWeb.open",
+    "onCommand:codexLiveWeb.stop"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "codexLiveWeb.start",
+        "title": "Codex Live Web: 启动并打开",
+        "icon": "$(play)"
+      },
+      {
+        "command": "codexLiveWeb.open",
+        "title": "Codex Live Web: 打开查看器",
+        "icon": "$(browser)"
+      },
+      {
+        "command": "codexLiveWeb.stop",
+        "title": "Codex Live Web: 停止",
+        "icon": "$(debug-stop)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "codexLiveWeb.start",
+          "when": "isWindows"
+        },
+        {
+          "command": "codexLiveWeb.open",
+          "when": "isWindows"
+        },
+        {
+          "command": "codexLiveWeb.stop",
+          "when": "isWindows"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Codex Live Web",
+      "properties": {
+        "codexLiveWeb.port": {
+          "type": "number",
+          "default": 17346,
+          "minimum": 1024,
+          "maximum": 65535,
+          "scope": "machine",
+          "description": "本地查看器监听端口。"
+        },
+        "codexLiveWeb.codexHome": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "可选的 Codex 数据目录绝对路径；留空时使用 CODEX_HOME 或 %USERPROFILE%\\.codex。"
+        }
+      }
+    }
+  }
+}
